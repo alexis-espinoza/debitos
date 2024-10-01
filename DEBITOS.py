@@ -57,62 +57,58 @@ def agregar_debito():
 
 def eliminar_deudas():
     try: 
-         sigt = '0'
-         deudor = ''
-         while(sigt=='0'): 
-             data_actual = leer_registros()
-             dict_deudores = listar_deudores(data_actual)
-             if(deudor==''):
-                 print('\n'+str(dict_deudores).replace(', ','\n').strip("{").strip("}"))
-                 opc_deudor = int(input('Seleccione: '))
-                 deudor = dict_deudores[opc_deudor]
-             datos_de_deudas = data_actual[deudor]
+        data_actual = leer_registros()
+        dict_deudores = listar_deudores(data_actual)
+        
+        print('\n'+str(dict_deudores).replace(', ','\n').strip("{").strip("}"))
+        opc_deudor = int(input('Seleccione: '))
+        deudor = dict_deudores[opc_deudor]
+        datos_de_deudas = data_actual[deudor]
+        datos_por_deudor = debitos_deudor(datos_de_deudas,deudor)
+        
+        if(datos_por_deudor['datos']):
+              print(datos_por_deudor['texto'])
+        else:
+             system('clear')
+             print('\n¡Sin pendientes!')
+             return
+        flag_cambio=False
+        codigo_deuda = input('\nOpciones de eliminado:\n#ID = registro según ID\n# 0 = todos los registros\n#<0 = todos los registro + deudor\nn,m = registros por rango\nSeleccione:  ')
+        if(codigo_deuda.find(',')==1):
+            rg = filtro.split(',')
+            i = int(rg[0])-1 #el primer registo
+            j = int(rg[1])   #el último registro
+            del data_actual[deudor][i:j]
+            flag_cambio=True
+            print('\n¡Se eliminaron los gastos según el rango indicado!')
+        else:
+           codigo_deuda = int(codigo_deuda)
+           if(codigo_deuda<0):
+              system('clear')
+              del data_actual[deudor]
+              flag_cambio=True
+              print('\n¡Se eliminó el deudor y sus registros asociados!')
 
-             if(len(datos_de_deudas)>0):
-                   print('\n')
-                   encabezado = 'Detalle de:' if deudor[0] == '-' else 'Prestado a: '                  
-                   print(encabezado, deudor.upper(),'\n')
-                   print('\tCÓDIGO\t\tDESCR\t\tMONTO\t\tFECHA\n')
-                   for registro in datos_de_deudas:
-                         linea = "\t"+str(datos_de_deudas.index(registro)+1).ljust(15)
-                         for campo in list(registro.keys()):
-                            linea+= '\t'+str(registro[campo]).ljust(15)
-                         print(linea)
-                   print(f"\t{'_'*55}")
-                   codigo_deuda = int(input('\nDigite el código de la deuda o [cero] para borrar todas: '))
-                   flag_cambio=False
-                   if(codigo_deuda<0):
-                      system('clear')
-                      del data_actual[deudor]
-                      flag_cambio=True
-                      print('\n¡Se eliminó el deudor y sus registros asociados!')
-
-                   elif(codigo_deuda==0):
-                      system('clear')
-                      del data_actual[deudor][:]
-                      flag_cambio=True
-                      print('\n¡Se eliminaron todos los préstamos del deudor!')
-                      
-                   elif(codigo_deuda>0 and codigo_deuda <= len(datos_de_deudas)):
-                      system('clear')
-                      del data_actual[deudor][codigo_deuda-1]
-                      flag_cambio=True
-                      print('\n¡Se el eliminó el dato del préstamo seleccionado!')
-                      
-                   if(flag_cambio==True):
-                      guardar_cambios(data_actual)
-                   else:
-                      system('clear')
-                      print('\n¡No se produjeron cambios!')
-                   
-                   sigt = input('\nDesea eliminar otro débito [0 = si]: ')
-                   system('clear')
-                   
-             elif(len(datos_de_deudas)==0):
-                system('clear')
-                print('\n¡Sin pendientes!')
-                break
+           elif(codigo_deuda==0):
+              system('clear')
+              del data_actual[deudor][:]
+              flag_cambio=True
+              print('\n¡Se eliminaron todos los préstamos del deudor!')
               
+           elif(codigo_deuda>0 and codigo_deuda <= len(datos_de_deudas)):
+              system('clear')
+              del data_actual[deudor][codigo_deuda-1]
+              flag_cambio=True
+              print('\n¡Se el eliminó el dato del préstamo seleccionado!')
+              
+           if(flag_cambio==True):
+              guardar_cambios(data_actual)
+           else:
+              system('clear')
+              print('\n¡No se produjeron cambios!')
+           
+        eliminar_deudas() if input('\nDesea eliminar otro débito [0 = si]: ') == '0' else None
+           
     except Exception:
       system('clear')
       print('\n¡No se pudo procesar el borrado!')
@@ -136,7 +132,22 @@ def filtrar_lista_de_deudas(filtro,arr_deudas):
     else:
         return arr_deudas
 
-def debitos_deudor():
+def debitos_deudor(arr_deudas, deudor):
+        
+        encabezado = '\nDetalle de:' if deudor[0] == '-' else 'Prestado a: '                  
+        linea = encabezado + deudor.upper()
+        linea += "\n\n\tID\tDESCT\t\tMONTO\t\tFECHA\n"
+        id = 0
+        total=0
+        for registro in arr_deudas:
+              id =id+1
+              linea+=f'\t{id}'
+              total+=registro["monto"]
+              for campo in list(registro.keys()):
+                 linea+= '\t'+str(registro[campo]).ljust(15)                         
+              linea += '\n'
+        linea+=f"\n\t{'-'*40}\n\tTOTAL: {total}"
+        return {'datos':True, 'texto':linea} if total>0 else {registros: False}
     
 def consultar_debito_por_deudor():
 
@@ -149,23 +160,12 @@ def consultar_debito_por_deudor():
       deudor = dict_deudores[opc_deudor]
       system('clear')
       datos_de_deudas = filtrar_lista_de_deudas(filtro,data_actual[deudor])
-      total=0
-      if(len(datos_de_deudas)>0):
-            print('\n')
-            encabezado = 'Detalle de:' if deudor[0] == '-' else 'Prestado a: '                  
-            print(encabezado, deudor.upper(),'\n')
-            print("\tID\tDESCT\t\tMONTO\t\tFECHA\n")
-            id = 0
-            for registro in datos_de_deudas:
-                  id =id+1
-                  linea=f'\t{id}'
-                  total+=registro["monto"]
-                  for campo in list(registro.keys()):
-                     linea+= '\t'+str(registro[campo]).ljust(15)                         
-                  print(linea)
-            print(f"\n\t{'-'*40}\n\tTOTAL: {total}")
+      datos_por_deudor = debitos_deudor(datos_de_deudas,deudor)
+      
+      if(datos_por_deudor['datos']):
+          print(datos_por_deudor['texto'])
+
       else:
-            system('clear')
             print('\n¡Sin pendientes!')
 
    except Exception:
@@ -204,7 +204,7 @@ def consultar_total():
       
 
 def menu():
-    try:
+    #try:
       while(True):
          
          #system('clear')
@@ -233,10 +233,10 @@ def menu():
             system('clear')
             menu()
       
-    except Exception:
-      system('clear')
-      print('\n¡Retornando al menú principal!')
-      menu()
+    #except Exception:
+      #system('clear')
+      #print('\n¡Retornando al menú principal!')
+      #menu()
       
 menu()
    
