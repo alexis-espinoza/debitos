@@ -148,8 +148,9 @@ def debitos_deudor(arr_deudas, deudor):
               for campo in list(registro.keys()):
                  linea+= '\t'+str(registro[campo]).ljust(15)                         
               linea += '\n'
-        linea+=f"\n\t{'-'*40}\n\tTOTAL: {total}"
-        return {'datos':True, 'texto':linea} if total>0 else {'datos': False}
+        linea+=f"\n\t{'-'*50}\n\tTOTAL: {total}"
+        linea = linea + '\t\t¡CANCELADO!' if (total <=0 and id>0) else linea 
+        return {'datos':True, 'texto':linea} if id>0 else {'datos': False}
     
 def consultar_debito_por_deudor():
 
